@@ -1,199 +1,219 @@
-import React,{Component} from 'react';
+import React, {
+    Component
+} from 'react';
 import Select from 'react-select';
-import axios from 'axios';
 
-const optionsStates = [
-  { value: 'Open', label: 'Open' },
-  { value: 'InProgress', label: 'InProgress' },
-  { value: 'Completed', label: 'Completed' },
-  { value: 'Archived', label: 'Archived' }
+const optionsStates = [{
+        value: 'Open',
+        label: 'Open'
+    },
+    {
+        value: 'InProgress',
+        label: 'InProgress'
+    },
+    {
+        value: 'Completed',
+        label: 'Completed'
+    },
+    {
+        value: 'Archived',
+        label: 'Archived'
+    }
 
 ];
-var userOptions=[]
-const users=[];
+var userOptions = []
+const URL = 'http://localhost:8080/api/';
+const users = [];
 
-class App extends Component{
-    constructor(){
+class App extends Component {
+    constructor() {
         super();
-        this.state={
-            name:'',
-            description:'',
-            user:"",
-            userSelected:"",
-            statusSelected:"",
-            status:"",
-            users:[],
-            tasks:[],
-            _id:'',
-            userName:'',
-            userPhone:'',
+        this.state = {
+            name: '',
+            description: '',
+            user: "",
+            userSelected: "",
+            statusSelected: "",
+            status: "",
+            users: [],
+            tasks: [],
+            _id: '',
+            userName: '',
+            userPhone: '',
         }
-        this.addTask=this.addTask.bind(this);
+        this.addTask = this.addTask.bind(this);
         this.addUser = this.addUser.bind(this);
-        this.handleChange=this.handleChange.bind(this);
+        this.handleChange = this.handleChange.bind(this);
     }
-    addTask(e){
-        if (this.state._id) {
-            
-         fetch(`http://localhost:8080/api/task/${this.state._id}`,{
-             method:'PUT',
-             body: JSON.stringify(this.state),
-             headers:{
-                 'Accept':'application/json',
-                 'Content-Type': 'application/json'
-             }
-         })
-         .then(res=> res.json())
-         .then(data=>{
-             console.log(data);
-             
-             this.setState({
-                 name:'',
-                 description:'',
-                 user:"",
-                 status:"",
-                 _id:'',
-                 userSelected:"",
-                 statusSelected:"",
-             })
-             this.fetchTasks();
-         })
- 
-        }else{
-         fetch('http://localhost:8080/api/task',{
-             method:'POST',
-             body: JSON.stringify(this.state),
-             headers:{
-                 'Accept':'application/json',
-                 'Content-Type': 'application/json'
-             }
-         })
-         .then(res=>res.json())
-         .then(data=> {
-             console.log(data);
-             
-             this.setState({
-                 name:'',
-                 description:'',
-                 status:'',
-                 user:'',
-                 _id:'',
-                 userSelected:"",
-                 statusSelected:"",
 
-             });
-             this.fetchTasks();
-         })
-         .catch(err=> console.error(err));
+    //in this function the tasks are added and implicitly also the task update.
+    addTask(e) {
+        if (this.state._id) {
+            //in this case is for update one task by Id
+            fetch(`${URL}task/${this.state._id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(this.state),
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    this.clearTaskFields();
+                    this.fetchTasks();
+                })
+        } else {
+            //here we add the task
+            fetch(`${URL}task`, {
+                    method: 'POST',
+                    body: JSON.stringify(this.state),
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+
+                    this.clearTaskFields();
+                    this.fetchTasks();
+                })
+                .catch(err => console.error(err));
         }
-         
-         e.preventDefault();
-     }
-     
-     addUser(e){
-         console.log('prueba cambio2')
-         fetch('http://localhost:8080/api/user',{
-            method:'POST',
-            body: JSON.stringify(this.state),
-            headers:{
-                'Accept':'application/json',
-                'Content-Type': 'application/json'
-            }
-         })
-         .then(res=>res.json())
-         .then(data=> {
-             console.log(data);
-             this.setState({
-                 userName:'',
-                 userPhone:'',
-             });
-             this.fetchUsers();
-           
-         })
-         .catch(err=> console.error(err));
-         
-         e.preventDefault();
-     }
-     componentDidMount(){
+
+        e.preventDefault();
+    }
+    //Adding a new User
+    addUser(e) {
+        fetch(`${URL}user`, {
+                method: 'POST',
+                body: JSON.stringify(this.state),
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                this.setState({
+                    userName: '',
+                    userPhone: '',
+                });
+                this.fetchUsers();
+
+            })
+            .catch(err => console.error(err));
+
+        e.preventDefault();
+    }
+    componentDidMount() {
         this.fetchTasks();
         this.fetchUsers()
     }
-    fetchUsers(){
+    //update the users list
+    fetchUsers() {
+        fetch(`${URL}user`)
+            .then(res => res.json()).then(data => {
+                if (users.length > 1) {
+                    users.push(data[data.length - 1])
+                    userOptions.push({
+                        value: users[users.length - 1].userName,
+                        label: users[users.length - 1].userName
+                    });
 
-        fetch('http://localhost:8080/api/user')
-        .then(res => res.json()).then(data=>{
-            if (users.length>1) {
-              users.push(data[data.length-1])
-              userOptions.push({value:users[users.length-1].userName,label:users[users.length-1].userName});
+                } else {
 
-            }else{
-                
-                userOptions = data.map(x => {
-                    return { value : x.userName , label : x.userName  }
-                })
-            }
-            this.setState({users:data})
-            
-            console.log(this.state.users);
-        });
-    }
-    fetchTasks(){
-        fetch('http://localhost:8080/api/task')
-        .then(res => res.json())
-        .then(data=>{
-            this.setState({tasks:data})
-            console.log(this.state.tasks);
-        });
-    }
-
-    deleteTask(id){
-       if (window.confirm('Are you sure you want to delete it?')) {
-        fetch(`http://localhost:8080/api/task/${id}`,{
-            method:'DELETE',
-            headers:{
-                'Accept':'application/json',
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(res =>res.json())
-        .then(data=>{
-            console.log(data);
-            this.fetchTasks();
-        }); 
-       }
-    }
-    editTask(id){
-        fetch(`http://localhost:8080/api/task/${id}`)
-            .then(res=> res.json())
-            .then(data=> {
-                console.log(data)
+                    userOptions = data.map(x => {
+                        return {
+                            value: x.userName,
+                            label: x.userName
+                        }
+                    })
+                }
                 this.setState({
-                    name:data.name,
-                    description:data.description,
-                    user:data.user,
-                    status:data.status,
-                    _id:data._id,
-                    userSelected:'',
-                    statusSelected:'',
-                    
+                    users: data
                 })
             });
     }
-    
-    handleChange(e){
-        const{name,value}=e.target;
+    //update the tasks list
+    fetchTasks() {
+        fetch(`${URL}task`)
+            .then(res => res.json())
+            .then(data => {
+                this.setState({
+                    tasks: data
+                })
+            });
+    }
+    clearTaskFields() {
         this.setState({
-            [name]:value
+            name: '',
+            description: '',
+            status: '',
+            user: '',
+            _id: '',
+            userSelected: "",
+            statusSelected: "",
         });
     }
-    changeTaskState =  (statusSelected) =>{
-        this.setState({statusSelected})
-        this.state.status=statusSelected.value;
+    //delete task by id
+    deleteTask(id) {
+        if (window.confirm('Are you sure you want to delete it?')) {
+            fetch(`${URL}task/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    this.fetchTasks();
+                });
+        }
+    }
+    //in this case we fill in the fields to edit the task
+    editTask(id) {
+        fetch(`${URL}task/${id}`)
+            .then(res => res.json())
+            .then(data => {
+                this.setState({
+                    name: data.name,
+                    description: data.description,
+                    user: data.user,
+                    status: data.status,
+                    _id: data._id,
+                    userSelected: '',
+                    statusSelected: '',
+
+                })
+            });
+    }
+
+    handleChange(e) {
+        const {
+            name,
+            value
+        } = e.target;
+        this.setState({
+            [name]: value
+        });
+    }
+    //Select for the tasks status 
+    changeTaskState = (statusSelected) => {
+        this.setState({
+            statusSelected
+        })
+        this.state.status = statusSelected.value;
 
     }
-    changeUser =  (userSelected) =>{
-        this.setState({userSelected})
-        this.state.user=userSelected.value;
+    //select for registered users
+    changeUser = (userSelected) => {
+        this.setState({
+            userSelected
+        })
+        this.state.user = userSelected.value;
     }
     render(){
         const { statusSelected } = this.state;
